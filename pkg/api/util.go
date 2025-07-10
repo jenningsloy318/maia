@@ -21,6 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 
+	"github.com/sapcc/go-bits/logg"
+
 	"github.com/sapcc/maia/pkg/keystone"
 	"github.com/sapcc/maia/pkg/storage"
 	"github.com/sapcc/maia/pkg/util"
@@ -207,8 +209,8 @@ func isPlainBasicAuth(req *http.Request) bool {
 	return false
 }
 
-func authorizeRules(w http.ResponseWriter, req *http.Request, guessScope bool, rules []string) bool {
-	util.LogDebug("authenticate")
+func authorizeRules(keystoneDriver keystone.Driver, w http.ResponseWriter, req *http.Request, guessScope bool, rules []string) bool {
+	logg.Debug("authenticate")
 	matchedRules := []string{}
 
 	domain, domainSet := mux.Vars(req)["domain"]
@@ -217,7 +219,7 @@ func authorizeRules(w http.ResponseWriter, req *http.Request, guessScope bool, r
 	cookie, cookieErr := req.Cookie(authTokenCookieName)
 	cookieSet := false
 	if cookieErr == nil && cookie.Value != "" && req.Header.Get(authTokenHeader) == "" {
-		util.LogDebug("found token cookie: %s...", cookie.String()[:1+len(cookie.String())/4])
+		logg.Debug("found token cookie: %s...", cookie.String()[:1+len(cookie.String())/4])
 		req.Header.Set(authTokenHeader, cookie.Value)
 		cookieSet = true
 	} else if isPlainBasicAuth(req) {
@@ -228,16 +230,16 @@ func authorizeRules(w http.ResponseWriter, req *http.Request, guessScope bool, r
 				domain = cookie.Value
 				domainSet = true
 			}
-			util.LogDebug("setting user domain via cookie: %s", domain)
+			logg.Debug("setting user domain via cookie: %s", domain)
 		} else {
-			util.LogDebug("setting user domain via URL: %s", domain)
+			logg.Debug("setting user domain via URL: %s", domain)
 		}
 		req.Header.Set(userDomainHeader, domain)
 	}
 
 	// 2. authenticate
 	ctx := req.Context()
-	policyContext, err := keystoneInstance.AuthenticateRequest(ctx, req, guessScope)
+	policyContext, err := keystoneDriver.AuthenticateRequest(ctx, req, guessScope)
 	if err != nil {
 		code := err.StatusCode()
 		httpCode := http.StatusUnauthorized
@@ -250,7 +252,7 @@ func authorizeRules(w http.ResponseWriter, req *http.Request, guessScope bool, r
 			if !ok {
 				username = req.UserAgent()
 			}
-			util.LogInfo("Request with wrong credentials from %s: %s", username, err.Error())
+			logg.Info("Request with wrong credentials from %s: %s", username, err.Error())
 			requestReauthentication(w)
 		case keystone.StatusMissingCredentials:
 			requestReauthentication(w)
@@ -258,7 +260,7 @@ func authorizeRules(w http.ResponseWriter, req *http.Request, guessScope bool, r
 			httpCode = http.StatusForbidden
 		default:
 			// warn of possible technical issues
-			util.LogWarning("Authentication error: %s", err.Error())
+			logg.Info("WARNING: Authentication error: %s", err.Error())
 			authErrorsCounter.Add(1)
 			httpCode = http.StatusInternalServerError
 		}
@@ -270,7 +272,7 @@ func authorizeRules(w http.ResponseWriter, req *http.Request, guessScope bool, r
 		// either the basic authentication credentials or the cookie do not match the domain in the URL
 		if cookieSet {
 			// there is a cookie: clear it and ask for new credentials
-			util.LogDebug("User domain mismatch between %s (cookie with token) and %s (URL)", req.Header.Get("X-User-Domain-Name"), domain)
+			logg.Debug("User domain mismatch between %s (cookie with token) and %s (URL)", req.Header.Get("X-User-Domain-Name"), domain)
 			requestReauthentication(w)
 			http.Error(w, "User switch: please login again", http.StatusUnauthorized)
 		} else {
@@ -314,7 +316,7 @@ func authorizeRules(w http.ResponseWriter, req *http.Request, guessScope bool, r
 }
 
 func requestReauthentication(w http.ResponseWriter) {
-	util.LogDebug("expire cookie and request username/password input")
+	logg.Debug("expire cookie and request username/password input")
 	http.SetCookie(w, &http.Cookie{
 		Name:     authTokenCookieName,
 		Path:     "/",
@@ -330,14 +332,14 @@ func requestReauthentication(w http.ResponseWriter) {
 func setAuthCookies(req *http.Request, w http.ResponseWriter) {
 	token := req.Header.Get(authTokenHeader)
 	if token == "" {
-		util.LogWarning("X-Auth-Token Header is empty!?")
+		logg.Info("WARNING: X-Auth-Token Header is empty!?")
 		return
 	}
-	util.LogDebug("Setting cookie: %s...", token[1:len(token)/4])
+	logg.Debug("Setting cookie: %s...", token[1:len(token)/4])
 	expiryStr := req.Header.Get(authTokenExpiryHeader)
 	expiry, pErr := time.Parse(time.RFC3339Nano, expiryStr)
 	if pErr != nil {
-		util.LogWarning("Incompatible token format for expiry data: %s", expiryStr)
+		logg.Info("WARNING: Incompatible token format for expiry data: %s", expiryStr)
 		expiry = time.Now().UTC().Add(viper.GetDuration("keystone.token_cache_time"))
 	}
 	// set token cookie
@@ -363,12 +365,27 @@ func setAuthCookies(req *http.Request, w http.ResponseWriter) {
 	})
 }
 
-func authorize(wrappedHandlerFunc func(w http.ResponseWriter, req *http.Request), guessScope bool, rule string) func(w http.ResponseWriter, req *http.Request) {
+func authorize(wrappedHandlerFunc func(w http.ResponseWriter, req *http.Request),
+	guessScope bool, rule string) func(w http.ResponseWriter, req *http.Request) {
+
 	return func(w http.ResponseWriter, req *http.Request) {
-		if authorizeRules(w, req, guessScope, []string{rule}) {
+		ks := getKeystoneForRequest(req)
+		if authorizeRules(ks, w, req, guessScope, []string{rule}) {
 			wrappedHandlerFunc(w, req)
 		}
 	}
+}
+
+// getKeystoneForRequest returns the keystone driver instance to use for the given request
+func getKeystoneForRequest(r *http.Request) keystone.Driver {
+	// Check if this is a global region request
+	if (r.URL.Query().Get("global") == "true" ||
+		r.Header.Get("X-Global-Region") == "true") &&
+		globalKeystoneInstance != nil {
+		logg.Debug("Using global keystone for request")
+		return globalKeystoneInstance
+	}
+	return keystoneInstance
 }
 
 func gaugeInflight(handler http.Handler) http.Handler {
