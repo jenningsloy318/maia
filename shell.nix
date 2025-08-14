@@ -14,6 +14,7 @@ mkShell {
     golangci-lint
     gotools # goimports
     mockgen
+    reuse
     # keep this line if you use bash
     bashInteractive
   ];
