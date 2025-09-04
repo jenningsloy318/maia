@@ -29,10 +29,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           check-latest: true
-          go-version: 1.24.6
+          go-version: 1.24.7
       - name: Run prepare make target
         run: make generate
       - name: Build all binaries
@@ -64,10 +64,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           check-latest: true
-          go-version: 1.24.6
+          go-version: 1.24.7
       - name: Run prepare make target
         run: make generate
       - name: Run tests and generate coverage report
