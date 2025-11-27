@@ -9,10 +9,10 @@ require (
 	github.com/h2non/gock v1.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/common v0.67.3
+	github.com/prometheus/common v0.67.4
 	github.com/prometheus/prometheus v0.304.1
 	github.com/rs/cors v1.11.1
-	github.com/sapcc/go-bits v0.0.0-20251119215428-a048ca8f6eba
+	github.com/sapcc/go-bits v0.0.0-20251127001757-54a64663b18f
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1
