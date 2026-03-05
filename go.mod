@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/databus23/goslo.policy v0.0.0-20250326134918-4afc2c56a903
-	github.com/gophercloud/gophercloud/v2 v2.10.0
+	github.com/gophercloud/gophercloud/v2 v2.11.0
 	github.com/gorilla/mux v1.8.1
 	github.com/h2non/gock v1.2.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -12,7 +12,7 @@ require (
 	github.com/prometheus/common v0.67.5
 	github.com/prometheus/prometheus v0.304.1
 	github.com/rs/cors v1.11.1
-	github.com/sapcc/go-bits v0.0.0-20260226170120-c20f89b66c3c
+	github.com/sapcc/go-bits v0.0.0-20260304154021-aa2c8a1d2bca
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1
