@@ -19,7 +19,7 @@ formatters:
     goimports:
       # Put local imports after 3rd-party packages
       local-prefixes:
-        - github.com/sapcc/maia
+        - github.com/SAP-cloud-infrastructure/maia
   exclusions:
     generated: lax
     paths:

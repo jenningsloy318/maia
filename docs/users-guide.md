@@ -11,6 +11,8 @@ SPDX-License-Identifier: Apache-2.0
 * [Quick Start](#quick-start) - Get started in 5 minutes
 * [Maia UI](#using-the-maia-ui) - Prometheus expression browser
 * [Maia CLI](#using-the-maia-client) - Command-line interface
+* [Using Maia with Grafana](#using-maia-with-grafana) - Dashboard integration
+* [Federating Maia to Prometheus](#federating-maia-to-prometheus) - Prometheus federation setup
 * [Troubleshooting](#troubleshooting) - Common issues and solutions
 
 ## Quick Start
@@ -24,7 +26,7 @@ Before using Maia CLI, ensure you have:
 1. **OpenStack Account**: Access to an OpenStack environment with Maia deployed
 2. **Project Access**: Membership in at least one OpenStack project
 3. **Required Role**: The `monitoring_viewer` or `monitoring_admin` role on your project
-4. **Maia Binary**: Download from [GitHub releases](https://github.com/sapcc/maia/releases) or build from source
+4. **Maia Binary**: Download from [GitHub releases](https://github.com/SAP-cloud-infrastructure/maia/releases) or build from source
 
 **Check if you have the required role**:
 ```bash
@@ -278,7 +280,7 @@ then you can override its URL using the `--maia-url` option:
 In the examples below we assume that you have initialized the OS_* variables your shell environment properly and that
 your user has the prerequisite roles (e.g. `monitoring_viewer`) on the project in scope.
 
-Type `maia --help` to get a full list of commands and options options with documentation.
+Type `maia --help` to get a full list of commands and options with documentation.
 
 ```
 maia --help
@@ -505,7 +507,7 @@ There are two ways to authenticate with application credentials:
 
 In both cases you use the _secret_ of the application credential as password.
 
-# Federating Maia to Prometheus
+## Federating Maia to Prometheus
 
 To configure Prometheus to receive data from Maia, the following job configuration has to be applied.
 

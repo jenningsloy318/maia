@@ -24,9 +24,9 @@ import (
 
 	"github.com/sapcc/go-bits/logg"
 
-	"github.com/sapcc/maia/pkg/keystone"
-	"github.com/sapcc/maia/pkg/storage"
-	"github.com/sapcc/maia/pkg/util"
+	"github.com/SAP-cloud-infrastructure/maia/pkg/keystone"
+	"github.com/SAP-cloud-infrastructure/maia/pkg/storage"
+	"github.com/SAP-cloud-infrastructure/maia/pkg/util"
 )
 
 // utility functionality
@@ -86,7 +86,7 @@ func versionData() VersionData {
 			},
 			{
 				Relation: "describedby",
-				URL:      "https://github.com/sapcc/maia/tree/master/README.md",
+				URL:      "https://github.com/SAP-cloud-infrastructure/maia/tree/master/README.md",
 				Type:     "text/html",
 			},
 		},
