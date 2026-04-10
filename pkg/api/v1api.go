@@ -6,6 +6,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sort"
@@ -138,6 +139,7 @@ func (p *v1Provider) LabelValues(w http.ResponseWriter, req *http.Request) {
 	query, err := util.AddLabelConstraintToExpression("count({"+string(name)+"!=\"\"}) BY ("+string(name)+")", labelKey, labelValues)
 	if err != nil {
 		ReturnPromError(w, err, http.StatusBadRequest)
+		return
 	}
 
 	start := time.Now().Add(-ttl)
@@ -166,7 +168,11 @@ func (p *v1Provider) LabelValues(w http.ResponseWriter, req *http.Request) {
 		ReturnPromError(w, err, http.StatusInternalServerError)
 		return
 	}
-	matrix := sr.Data.Value.(model.Matrix)
+	matrix, ok := sr.Data.Value.(model.Matrix)
+	if !ok {
+		ReturnPromError(w, fmt.Errorf("cannot process LabelValues response: expected matrix result type, got %s", sr.Data.Value.Type()), http.StatusBadGateway)
+		return
+	}
 
 	// take just the label values from the query result
 	var result storage.LabelValuesResponse
